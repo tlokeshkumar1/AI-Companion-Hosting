@@ -211,7 +211,7 @@ export default function Dashboard() {
                 >
                   <div className="flex items-center space-x-3">
                     <img 
-                      src={chat.bot_avatar ? `http://localhost:8000/uploads/${chat.bot_avatar}` : defaultAvatar} 
+                      src={chat.bot_avatar ? `https://ai-companion-hosting-backend.onrender.com/uploads/${chat.bot_avatar}` : defaultAvatar} 
                       alt={chat.bot_name}
                       className="h-10 w-10 rounded-full object-cover"
                       onError={(e) => {

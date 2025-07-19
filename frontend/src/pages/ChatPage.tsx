@@ -292,7 +292,7 @@ export default function ChatPage() {
             <div className="flex items-center">
               {bot.avatar ? (
                 <img
-                  src={bot.avatar.startsWith('http') ? bot.avatar : `http://localhost:8000/uploads/${bot.avatar}`}
+                  src={bot.avatar.startsWith('http') ? bot.avatar : `https://ai-companion-hosting-backend.onrender.com/uploads/${bot.avatar}`}
                   alt={bot.name}
                   className="w-10 h-10 rounded-full object-cover mr-3"
                   onError={(e) => {
@@ -358,7 +358,7 @@ export default function ChatPage() {
                   {bot?.avatar ? (
                     <div className="relative">
                       <img
-                        src={bot.avatar.startsWith('http') ? bot.avatar : `http://localhost:8000/uploads/${bot.avatar}`}
+                        src={bot.avatar.startsWith('http') ? bot.avatar : `https://ai-companion-hosting-backend.onrender.com/uploads/${bot.avatar}`}
                         alt={bot.name}
                         className="w-8 h-8 rounded-full object-cover"
                         onError={(e) => {

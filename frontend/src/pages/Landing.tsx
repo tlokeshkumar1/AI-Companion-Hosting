@@ -91,7 +91,7 @@ export default function Landing() {
 
   const getAvatarUrl = (bot: BotType) => {
     if (bot.avatar) {
-      return `http://localhost:8000/uploads/${bot.avatar}`;
+      return `https://ai-companion-hosting-backend.onrender.com/uploads/${bot.avatar}`;
     }
     return null;
   };

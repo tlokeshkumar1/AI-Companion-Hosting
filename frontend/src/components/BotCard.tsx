@@ -37,7 +37,7 @@ export default function BotCard({ bot, isOwner }: BotCardProps) {
         <div className="flex items-center mb-4">
           {bot.avatar ? (
             <img
-              src={`http://localhost:8000/uploads/${bot.avatar}`}
+              src={`https://ai-companion-hosting-backend.onrender.com/uploads/${bot.avatar}`}
               alt={bot.name}
               onError={(e) => {
                 // If image fails to load, show the default avatar

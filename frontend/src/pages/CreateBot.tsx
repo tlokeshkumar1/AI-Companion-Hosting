@@ -64,8 +64,8 @@ export default function CreateBot() {
         const avatarPath = bot.avatar.startsWith('http') 
           ? bot.avatar 
           : bot.avatar.startsWith('uploads/') 
-            ? `http://localhost:8000/${bot.avatar}`
-            : `http://localhost:8000/uploads/${bot.avatar}`;
+            ? `https://ai-companion-hosting-backend.onrender.com/${bot.avatar}`
+            : `https://ai-companion-hosting-backend.onrender.com/uploads/${bot.avatar}`;
         setAvatarPreview(avatarPath);
       }
     } catch (error) {
