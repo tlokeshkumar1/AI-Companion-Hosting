@@ -1,0 +1,14 @@
+# secret keys
+.env
+
+#unwanted files
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# secret files
+credentials.json
+token.json
