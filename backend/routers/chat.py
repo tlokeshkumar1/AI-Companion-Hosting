@@ -2,7 +2,7 @@ from fastapi import APIRouter, Body, HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient
 from utils.langchain_utils import chat_with_bot
 from datetime import datetime, timezone
-import uuid, os, json
+import uuid, os
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -47,10 +47,8 @@ async def ask(
 ):
     chat_id = f"{user_id}_{bot_id}"
     
-    # Load bot data to get avatar_base64
-    with open("bots_data.json", "r") as f:
-        bots = json.load(f)
-    bot = next((b for b in bots if b["bot_id"] == bot_id), None)
+    # Load bot data from MongoDB
+    bot = await db.bots.find_one({"bot_id": bot_id})
     if not bot:
         return {"status": "error", "message": "Bot not found"}
 

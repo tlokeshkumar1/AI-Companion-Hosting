@@ -1,24 +1,19 @@
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Body
-import json, os, uuid, base64
+from motor.motor_asyncio import AsyncIOMotorClient
+from datetime import datetime, timezone
+import os, uuid
+from dotenv import load_dotenv
+load_dotenv()
 
 router = APIRouter(prefix="/bots", tags=["Bots"])
 
-BOTS_FILE = "bots_data.json"
+client = AsyncIOMotorClient(os.getenv("MONGODB_URI"))
+db = client["ai_companion"]
 
-def load_bots():
-    if not os.path.exists(BOTS_FILE):
-        return []
-    try:
-        with open(BOTS_FILE, "r") as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        print("⚠️ Warning: bots_data.json is empty or corrupted. Replacing with empty list.")
-        return []
-
-def save_bots(bots):
-    with open(BOTS_FILE, "w") as f:
-        json.dump(bots, f, indent=2)
+def get_current_timestamp():
+    """Get current UTC timestamp as timezone-aware datetime object."""
+    return datetime.now(timezone.utc)
 
 class BotCreate(BaseModel):
     user_id: str
@@ -48,11 +43,9 @@ class BotUpdate(BaseModel):
 
 @router.post("/createbot")
 async def create_bot(bot_data: BotCreate):
-    # 🔽 DEBUG PRINT HERE
     print("Received bot data:", bot_data.name, bot_data.type_of_bot, "Has avatar:", bool(bot_data.avatar_base64))
 
     try:
-        bots = load_bots()
         bot_id = str(uuid.uuid4())
 
         bot = {
@@ -67,11 +60,12 @@ async def create_bot(bot_data: BotCreate):
             "chatting_way": bot_data.chatting_way,
             "type_of_bot": bot_data.type_of_bot,
             "privacy": bot_data.privacy,
-            "avatar_base64": bot_data.avatar_base64
+            "avatar_base64": bot_data.avatar_base64,
+            "created_at": get_current_timestamp(),
+            "updated_at": get_current_timestamp()
         }
 
-        bots.append(bot)
-        save_bots(bots)
+        await db.bots.insert_one(bot)
 
         return {"message": "Bot created successfully", "bot_id": bot_id}
     
@@ -81,43 +75,45 @@ async def create_bot(bot_data: BotCreate):
 
 @router.get("/public")
 async def list_public_bots():
-    bots = load_bots()
-    public_bots = []
-    for bot in bots:
-        if bot.get("privacy") == "public":
+    try:
+        public_bots = []
+        async for bot in db.bots.find({"privacy": "public"}):
+            # Convert ObjectId to string for JSON serialization
+            bot["_id"] = str(bot["_id"])
             public_bots.append(bot)
-    return public_bots
+        return public_bots
+    except Exception as e:
+        print("❌ Error in list_public_bots:", str(e))
+        raise HTTPException(status_code=500, detail=f"Internal Error: {str(e)}")
 
 @router.get("/my")
 async def list_my_bots(user_id: str):
-    bots = load_bots()
-    my_bots = []
-    for bot in bots:
-        if bot.get("user_id") == user_id:
+    try:
+        my_bots = []
+        async for bot in db.bots.find({"user_id": user_id}):
+            # Convert ObjectId to string for JSON serialization
+            bot["_id"] = str(bot["_id"])
             my_bots.append(bot)
-    return my_bots
+        return my_bots
+    except Exception as e:
+        print("❌ Error in list_my_bots:", str(e))
+        raise HTTPException(status_code=500, detail=f"Internal Error: {str(e)}")
 
 @router.put("/{bot_id}")
 async def update_bot(bot_id: str, bot_data: BotUpdate):
     try:
-        bots = load_bots()
-        bot_index = -1
-        
         # Find the bot to update
-        for i, bot in enumerate(bots):
-            if bot.get("bot_id") == bot_id:
-                bot_index = i
-                break
+        existing_bot = await db.bots.find_one({"bot_id": bot_id})
         
-        if bot_index == -1:
+        if not existing_bot:
             raise HTTPException(status_code=404, detail="Bot not found")
         
         # Check if the user owns this bot
-        if bots[bot_index].get("user_id") != bot_data.user_id:
+        if existing_bot.get("user_id") != bot_data.user_id:
             raise HTTPException(status_code=403, detail="You don't have permission to update this bot")
         
         # Update the bot data
-        bots[bot_index].update({
+        update_data = {
             "name": bot_data.name,
             "bio": bot_data.bio,
             "first_message": bot_data.first_message,
@@ -127,10 +123,17 @@ async def update_bot(bot_id: str, bot_data: BotUpdate):
             "chatting_way": bot_data.chatting_way,
             "type_of_bot": bot_data.type_of_bot,
             "privacy": bot_data.privacy,
-            "avatar_base64": bot_data.avatar_base64 if bot_data.avatar_base64 else bots[bot_index].get("avatar_base64")
-        })
+            "updated_at": get_current_timestamp()
+        }
         
-        save_bots(bots)
+        # Only update avatar if provided
+        if bot_data.avatar_base64:
+            update_data["avatar_base64"] = bot_data.avatar_base64
+        
+        await db.bots.update_one(
+            {"bot_id": bot_id},
+            {"$set": update_data}
+        )
         
         return {"message": "Bot updated successfully", "bot_id": bot_id}
     
@@ -143,25 +146,18 @@ async def update_bot(bot_id: str, bot_data: BotUpdate):
 @router.delete("/{bot_id}")
 async def delete_bot(bot_id: str, user_id: str):
     try:
-        bots = load_bots()
-        bot_index = -1
-        
         # Find the bot to delete
-        for i, bot in enumerate(bots):
-            if bot.get("bot_id") == bot_id:
-                bot_index = i
-                break
+        existing_bot = await db.bots.find_one({"bot_id": bot_id})
         
-        if bot_index == -1:
+        if not existing_bot:
             raise HTTPException(status_code=404, detail="Bot not found")
         
         # Check if the user owns this bot
-        if bots[bot_index].get("user_id") != user_id:
+        if existing_bot.get("user_id") != user_id:
             raise HTTPException(status_code=403, detail="You don't have permission to delete this bot")
         
-        # Remove the bot from the list (no file deletion needed for base64)
-        bots.pop(bot_index)
-        save_bots(bots)
+        # Delete the bot
+        await db.bots.delete_one({"bot_id": bot_id})
         
         return {"message": "Bot deleted successfully", "bot_id": bot_id}
     
@@ -173,8 +169,16 @@ async def delete_bot(bot_id: str, user_id: str):
 
 @router.get("/{bot_id}")
 async def get_bot(bot_id: str):
-    bots = load_bots()
-    for bot in bots:
-        if bot.get("bot_id") == bot_id:
-            return bot
-    raise HTTPException(status_code=404, detail="Bot not found")
+    try:
+        bot = await db.bots.find_one({"bot_id": bot_id})
+        if not bot:
+            raise HTTPException(status_code=404, detail="Bot not found")
+        
+        # Convert ObjectId to string for JSON serialization
+        bot["_id"] = str(bot["_id"])
+        return bot
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("❌ Error in get_bot:", str(e))
+        raise HTTPException(status_code=500, detail=f"Internal Error: {str(e)}")
