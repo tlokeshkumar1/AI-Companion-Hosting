@@ -6,9 +6,9 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/auth': 'http://localhost:8000',
-      '/bots': 'http://localhost:8000',
-      '/chat': 'http://localhost:8000'
+      '/auth': 'https://ai-companion-hosting-backend.onrender.com',
+      '/bots': 'https://ai-companion-hosting-backend.onrender.com',
+      '/chat': 'https://ai-companion-hosting-backend.onrender.com'
     }
   },
   base: '/',
