@@ -23,5 +23,5 @@ async def send_welcome_email(to, name):
     send_email(to, "Welcome to AI Companion!", body)
 
 async def send_otp_email(to, otp):
-    body = f"Your OTP for password reset is: {otp}\n\nValid for 10 minutes."
+    body = f"Your OTP is: {otp}\n\nValid for 10 minutes."
     send_email(to, "AI Companion - OTP", body)
