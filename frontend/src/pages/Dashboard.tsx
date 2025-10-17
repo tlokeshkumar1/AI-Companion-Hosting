@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, MessageCircle, ChevronRight, Menu, X } from 'lucide-react';
-import { getMyBots, getPublicBots, getChatHistory, deleteBot } from '../services/api';
+import { getMyBots, getPublicBots, getChatHistory, deleteBot, getBotById } from '../services/api';
 import BotCard from '../components/BotCard';
 import { Bot, ChatMessage, ChatHistoryItem } from '../types';
 import { useMediaQuery } from 'react-responsive';
@@ -74,7 +74,19 @@ export default function Dashboard() {
         try {
           const response = await getChatHistory(userId, botId);
           if (response.data && response.data.length > 0) {
-            const bot = allBots.find(b => b.bot_id === botId);
+            // Get bot details to get avatar
+            let bot: Bot | undefined = allBots.find(b => b.bot_id === botId);
+            
+            // If bot not found in current lists, fetch it directly
+            if (!bot) {
+              try {
+                const botResponse = await getBotById(botId);
+                bot = botResponse.data;
+              } catch (error) {
+                console.error(`Error fetching bot ${botId}:`, error);
+              }
+            }
+            
             const lastMessage: ChatMessage = response.data[response.data.length - 1];
             
             // Ensure we have a valid timestamp

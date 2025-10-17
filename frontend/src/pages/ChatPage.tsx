@@ -24,6 +24,13 @@ interface ChatMessage {
   message: string;
   response: string;
   timestamp: string;
+  is_system_message?: boolean;
+  message_id?: string;
+  updated?: string;
+  _id?: string;
+  user_id?: string;
+  bot_id?: string;
+  chat_id?: string;
 }
 
 export default function ChatPage() {
@@ -82,7 +89,8 @@ export default function ChatPage() {
                 id: 'welcome-' + Date.now(),
                 message: '',
                 response: welcomeResponse,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                is_system_message: true
               };
               console.log('Setting welcome message:', welcomeMessage);
               setChat([welcomeMessage]);
@@ -103,11 +111,18 @@ export default function ChatPage() {
             } else if (Array.isArray(historyResponse.data)) {
               console.log('Setting chat history data:', historyResponse.data);
               // Ensure each message has the required fields
-              const formattedMessages = historyResponse.data.map((msg: ChatMessage) => ({
-                id: msg.id || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              const formattedMessages = historyResponse.data.map((msg: any) => ({
+                id: msg._id || msg.id || msg.message_id || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 message: msg.message || '',
                 response: msg.response || '',
-                timestamp: msg.timestamp || new Date().toISOString()
+                timestamp: msg.timestamp || new Date().toISOString(),
+                is_system_message: msg.is_system_message || false,
+                message_id: msg.message_id || undefined,
+                updated: msg.updated || undefined,
+                _id: msg._id || undefined,
+                user_id: msg.user_id || undefined,
+                bot_id: msg.bot_id || undefined,
+                chat_id: msg.chat_id || undefined
               }));
               console.log('Formatted messages:', formattedMessages);
               setChat(formattedMessages);
@@ -124,7 +139,8 @@ export default function ChatPage() {
                   id: 'welcome-' + Date.now(),
                   message: '',
                   response: bot.first_message || 'Hello! How can I help you today?',
-                  timestamp: new Date().toISOString()
+                  timestamp: new Date().toISOString(),
+                  is_system_message: true
                 };
                 setChat(prev => [...prev, welcomeMessage]);
               }
@@ -157,8 +173,6 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-
-
   const handleSend = async () => {
     if (!input.trim() || isSending || !userId || !botId) return;
 
@@ -174,7 +188,8 @@ export default function ChatPage() {
       id: messageId,
       message: userMessage,
       response: '...', // Temporary loading response
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      is_system_message: false
     };
     
     setChat((prev: ChatMessage[]) => [...prev, newMessage]);
@@ -241,7 +256,8 @@ export default function ChatPage() {
             id: 'welcome-' + Date.now(),
             message: '',
             response: bot.first_message || 'Hello! How can I help you today?',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            is_system_message: true
           };
           setChat([welcomeMessage]);
           
@@ -403,8 +419,6 @@ export default function ChatPage() {
             )}
           </React.Fragment>
         ))}
-
-
 
         <div ref={messagesEndRef} />
       </div>

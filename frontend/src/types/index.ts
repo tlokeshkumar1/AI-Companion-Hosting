@@ -12,10 +12,18 @@ export interface Bot {
 }
 
 export interface ChatMessage {
+  _id?: string;
+  user_id?: string;
+  bot_id?: string;
+  chat_id?: string;
   message?: string;
   response?: string;
   timestamp: string;
-  // Add other message properties as needed
+  is_system_message?: boolean;
+  message_id?: string;
+  updated?: string;
+  // Removed bot_avatar_base64 as it's now fetched from bot document
+  // Removed previous_update as it was always null
 }
 
 export interface ChatHistoryItem {
