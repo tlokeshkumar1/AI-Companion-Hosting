@@ -20,16 +20,26 @@ async def chat_with_bot(bot, user_message, chat_id):
         AI:
     """
 
-    api_key = os.getenv("GOOGLE_API_KEY")
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+    api_key = os.getenv("NVIDIA_API_KEY")
+    url = os.getenv("NVIDIA_LLM_URL", "https://integrate.api.nvidia.com/v1/chat/completions")
+    model = os.getenv("NVIDIA_LLM_MODEL", "meta/llama-3.1-8b-instruct")
 
-    headers = {"Content-Type": "application/json"}
-    params = {"key": api_key}
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}]
+        "model": model,
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 1024
     }
 
     async with httpx.AsyncClient() as client:
-        res = await client.post(url, headers=headers, params=params, json=payload)
+        res = await client.post(url, headers=headers, json=payload, timeout=30.0)
+        res.raise_for_status()
         data = res.json()
-        return data['candidates'][0]['content']['parts'][0]['text']
+        return data['choices'][0]['message']['content']
